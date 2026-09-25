@@ -74,6 +74,9 @@
   .btn.ghost{background:#fff;color:var(--moss)}
   .btn.ghost:hover{background:var(--moss-lt)}
   .btn.sm{padding:6px 12px;font-size:13px}
+  .btn.danger{background:#fff;color:var(--red);border-color:#e3b5af}
+  .btn.danger:hover{background:var(--red-lt)}
+  .btn.danger.solid{background:var(--red);color:#fff;border-color:var(--red)}
   .btn:disabled{opacity:.5;cursor:not-allowed}
   .err{background:var(--red-lt);color:var(--red);padding:10px 14px;border-radius:8px;font-size:14px;margin-top:14px;display:none}
   .note{background:var(--amber-lt);border-left:4px solid var(--amber);padding:12px 14px;border-radius:6px;font-size:14px;margin-bottom:16px}
@@ -284,6 +287,16 @@
   </div>
   <div class="err" id="retErr"></div>
   <div class="nav"><button class="btn ghost" id="retCancel">Cancel</button><button class="btn" id="retSave">Save</button></div>
+</div></dialog>
+
+<dialog id="delDlg"><div class="dlg">
+  <h2>Delete sign-off?</h2>
+  <p class="sub" id="delWho"></p>
+  <p style="font-size:14px;margin:0 0 14px">This permanently removes the record and both signatures. For a device that's been handed back, use <b>Close out</b> instead so the history is kept. Download the PDF first if you need a copy.</p>
+  <label>Type <b>DELETE</b> to confirm</label>
+  <input type="text" id="delConfirm" autocomplete="off">
+  <div class="err" id="delErr"></div>
+  <div class="nav"><button class="btn ghost" id="delCancel">Cancel</button><button class="btn danger solid" id="delGo" disabled>Delete record</button></div>
 </div></dialog>
 
 <footer>Avoncourt Packaging Ltd · Ballycurreen Industrial Estate, Cork · Lost or stolen device? Contact Philip O'Crowley immediately.</footer>
@@ -620,10 +633,11 @@ function renderRegister(){
       <td>${esc(r.device_type)} · ${esc(r.make_model)}<div class="muted">${esc(r.asset_tag)} · S/N ${esc(r.serial_number)}</div></td>
       <td>${fmtDate(r.issue_date)}<div class="muted">${r.storage_arrangement==='Take home'?'Takes home':'On-site'}</div></td>
       <td><span class="pill ${pill}">${esc(r.status)}</span>${r.returned_date?`<div class="muted">${fmtDate(r.returned_date)}</div>`:''}</td>
-      <td><div class="actions"><button class="btn ghost sm" data-pdf="${r.id}">PDF</button>${r.status==='On issue'?`<button class="btn sm" data-ret="${r.id}">Close out</button>`:''}</div></td>
+      <td><div class="actions"><button class="btn ghost sm" data-pdf="${r.id}">PDF</button>${r.status==='On issue'?`<button class="btn sm" data-ret="${r.id}">Close out</button>`:''}<button class="btn danger sm" data-del="${r.id}">Delete</button></div></td>
     </tr>`}).join('');
   $('regRows').querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>makePdf(regRows.find(r=>r.id===b.dataset.pdf)));
   $('regRows').querySelectorAll('[data-ret]').forEach(b=>b.onclick=()=>openReturn(regRows.find(r=>r.id===b.dataset.ret)));
+  $('regRows').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>openDelete(regRows.find(r=>r.id===b.dataset.del)));
 }
 function openReturn(r){
   retTarget=r; $('retWho').textContent=`${r.staff_name} — ${r.device_type} ${r.asset_tag}`;
@@ -639,6 +653,20 @@ $('retSave').onclick=async()=>{
   const {error}=await sb.from('device_signoffs').update(upd).eq('id',retTarget.id);
   if(error) return showErr($('retErr'),error.message);
   $('retDlg').close(); await loadRegister();
+};
+let delTarget=null;
+function openDelete(r){
+  delTarget=r; $('delWho').textContent=`${r.staff_name} — ${r.device_type} ${r.asset_tag} (${shortRef(r.id)})`;
+  $('delConfirm').value=''; $('delGo').disabled=true; showErr($('delErr'),''); $('delDlg').showModal(); $('delConfirm').focus();
+}
+$('delConfirm').oninput=()=>{ $('delGo').disabled=$('delConfirm').value.trim().toUpperCase()!=='DELETE'; };
+$('delCancel').onclick=()=>$('delDlg').close();
+$('delGo').onclick=async()=>{
+  $('delGo').disabled=true;
+  const {data,error}=await sb.from('device_signoffs').delete().eq('id',delTarget.id).select('id');
+  if(error){ $('delGo').disabled=false; return showErr($('delErr'),error.message); }
+  if(!data||!data.length){ $('delGo').disabled=false; return showErr($('delErr'),'Nothing was deleted — the delete permission may not be set up in Supabase yet (run delete_policy.sql).'); }
+  $('delDlg').close(); await loadRegister();
 };
 $('csvBtn').onclick=()=>{
   const cols=['id','staff_name','department','job_title','employee_id','staff_email','device_type','make_model','asset_tag','serial_number','accessories','condition_on_issue','condition_notes','storage_arrangement','issued_by','issue_date','signed_at','terms_version','status','returned_date','return_condition','accessories_returned','return_notes','received_by'];
