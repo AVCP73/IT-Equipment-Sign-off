@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IT Equipment Sign-off · Avoncourt Packaging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --moss:#4d6b3c; --moss-dk:#3a5230; --moss-lt:#e8efe2; --moss-ln:#c9d8bd;
+    --ink:#1f2622; --ink2:#55605a; --ink3:#8a948e;
+    --bg:#f3f4f1; --card:#fff; --line:#dde1dc;
+    --red:#b23a2e; --red-lt:#fbeae8; --amber:#b7791f; --amber-lt:#fdf3e1;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'IBM Plex Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.5}
+  header{background:var(--moss-dk);color:#fff;padding:18px 16px 0}
+  .hwrap{max-width:860px;margin:0 auto}
+  .brand{font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+  h1{margin:4px 0 14px;font-size:24px;font-weight:600}
+  .tabs{display:flex;gap:4px}
+  .tab{background:transparent;border:0;color:#cfdcc6;font:inherit;font-weight:500;padding:10px 16px;border-radius:8px 8px 0 0;cursor:pointer}
+  .tab.active{background:var(--bg);color:var(--ink)}
+  main{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px}
+  h2{font-size:19px;margin:0 0 4px;font-weight:600}
+  .sub{color:var(--ink2);margin:0 0 18px;font-size:15px}
+  .steps{display:flex;gap:6px;margin-bottom:16px}
+  .steps div{flex:1;height:5px;border-radius:3px;background:var(--line)}
+  .steps div.on{background:var(--moss)}
+  .steplabel{font-size:13px;color:var(--ink2);margin-bottom:6px;font-weight:500}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .full{grid-column:1/-1}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}.card{padding:18px}}
+  label{display:block;font-weight:500;font-size:14px;margin-bottom:5px}
+  .req{color:var(--red)}
+  .hint{font-weight:400;color:var(--ink3);font-size:13px}
+  input[type=text],input[type=email],input[type=date],select,textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid #c8cec9;border-radius:8px;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--moss);outline-offset:0;border-color:var(--moss)}
+  textarea{min-height:70px;resize:vertical}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{position:relative}
+  .chip input{position:absolute;opacity:0}
+  .chip span{display:inline-block;padding:8px 14px;border:1px solid #c8cec9;border-radius:20px;cursor:pointer;font-size:14px;user-select:none}
+  .chip input:checked+span{background:var(--moss);border-color:var(--moss);color:#fff}
+  .chip input:focus-visible+span{outline:2px solid var(--moss);outline-offset:2px}
+  .seg{display:flex;border:1px solid #c8cec9;border-radius:8px;overflow:hidden}
+  .seg label{flex:1;margin:0;text-align:center;cursor:pointer;position:relative}
+  .seg input{position:absolute;opacity:0}
+  .seg span{display:block;padding:10px 6px;font-weight:500;font-size:14px}
+  .seg label+label span{border-left:1px solid #c8cec9}
+  .seg input:checked+span{background:var(--moss-lt);color:var(--moss-dk);box-shadow:inset 0 -3px 0 var(--moss)}
+  .term{display:flex;gap:12px;padding:14px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;cursor:pointer;background:#fff}
+  .term:hover{border-color:var(--moss-ln)}
+  .term.checked{background:var(--moss-lt);border-color:var(--moss-ln)}
+  .term input{width:22px;height:22px;flex-shrink:0;margin-top:2px;accent-color:var(--moss)}
+  .term b{display:block;font-size:15px;margin-bottom:2px}
+  .term p{margin:0;font-size:14px;color:var(--ink2)}
+  .term.interim{border-left:4px solid var(--amber)}
+  .tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:var(--amber-lt);color:var(--amber);padding:1px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+  .allbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:14px;color:var(--ink2)}
+  .sigbox{border:1.5px dashed #b6beb8;border-radius:8px;background:#fcfcfb;position:relative;touch-action:none}
+  .sigbox canvas{display:block;width:100%;height:170px;cursor:crosshair}
+  .sigbox .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink3);pointer-events:none;font-size:14px}
+  .sigrow{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+  .linkbtn{background:none;border:0;color:var(--moss);font:inherit;font-size:14px;cursor:pointer;padding:4px 0;text-decoration:underline}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px}
+  .btn{font:inherit;font-weight:600;padding:12px 22px;border-radius:8px;border:1px solid var(--moss);background:var(--moss);color:#fff;cursor:pointer}
+  .btn:hover{background:var(--moss-dk)}
+  .btn.ghost{background:#fff;color:var(--moss)}
+  .btn.ghost:hover{background:var(--moss-lt)}
+  .btn.sm{padding:6px 12px;font-size:13px}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .err{background:var(--red-lt);color:var(--red);padding:10px 14px;border-radius:8px;font-size:14px;margin-top:14px;display:none}
+  .note{background:var(--amber-lt);border-left:4px solid var(--amber);padding:12px 14px;border-radius:6px;font-size:14px;margin-bottom:16px}
+  .summary{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:14px;margin:0 0 16px}
+  .summary dt{color:var(--ink2)} .summary dd{margin:0;font-weight:500}
+  .done{text-align:center;padding:30px 10px}
+  .tick{width:64px;height:64px;border-radius:50%;background:var(--moss-lt);color:var(--moss);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:34px}
+  .ref{font-family:'IBM Plex Mono',monospace;background:var(--bg);padding:3px 10px;border-radius:6px}
+  .hidden{display:none!important}
+  /* register */
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  @media(max-width:600px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+  .tile .n{font-size:26px;font-weight:600}
+  .tile .l{font-size:13px;color:var(--ink2)}
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .filters input{flex:2;min-width:180px}.filters select{flex:1;min-width:130px}
+  .tbl{width:100%;border-collapse:collapse;font-size:14px}
+  .tbl th{text-align:left;font-weight:600;color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:8px;border-bottom:2px solid var(--line)}
+  .tbl td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tblwrap{overflow-x:auto}
+  .pill{display:inline-block;padding:2px 9px;border-radius:10px;font-size:12px;font-weight:600;white-space:nowrap}
+  .pill.on{background:var(--moss-lt);color:var(--moss-dk)} .pill.ret{background:#eceeec;color:var(--ink2)} .pill.lost{background:var(--red-lt);color:var(--red)}
+  .muted{color:var(--ink3);font-size:13px}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  dialog{border:0;border-radius:12px;padding:0;max-width:460px;width:calc(100% - 32px)}
+  dialog::backdrop{background:rgba(20,30,20,.45)}
+  .dlg{padding:22px}
+  .dlg .grid{grid-template-columns:1fr}
+  footer{text-align:center;color:var(--ink3);font-size:13px;padding:0 16px 30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <div class="brand">Avoncourt Packaging Ltd · IT</div>
+    <h1>IT Equipment Sign-off</h1>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-view="signoff">Sign-off</button>
+      <button class="tab" data-view="register">Device register</button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ============ SIGN-OFF WIZARD ============ -->
+<section id="view-signoff">
+  <div class="card" id="wizard">
+    <div class="steplabel" id="stepLabel">Step 1 of 4 · Your details</div>
+    <div class="steps" id="stepBar"><div></div><div></div><div></div><div></div></div>
+
+    <!-- Step 1 -->
+    <div class="step" data-step="1">
+      <h2>Your details</h2>
+      <p class="sub">Complete this with IT when you collect your device.</p>
+      <div class="grid">
+        <div class="full"><label>Full name <span class="req">*</span></label><input type="text" id="staff_name" autocomplete="name"></div>
+        <div><label>Department <span class="req">*</span></label>
+          <select id="department"><option value="">Select…</option>
+            <option>Production</option><option>Maintenance</option><option>Material Handling / Granulation</option>
+            <option>Stores</option><option>Quality</option><option>Logistics</option><option>Office / Admin</option><option>Management</option>
+          </select></div>
+        <div><label>Job title</label><input type="text" id="job_title"></div>
+        <div><label>Employee ID <span class="hint">(optional)</span></label><input type="text" id="employee_id"></div>
+        <div><label>Work email <span class="hint">(optional)</span></label><input type="email" id="staff_email" autocomplete="email"></div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step hidden" data-step="2">
+      <h2>Device issued</h2>
+      <p class="sub">IT fills in the device details with you.</p>
+      <div class="grid">
+        <div class="full"><label>Device type <span class="req">*</span></label>
+          <div class="seg">
+            <label><input type="radio" name="device_type" value="Laptop"><span>Laptop / 2-in-1</span></label>
+            <label><input type="radio" name="device_type" value="Tablet"><span>Tablet</span></label>
+            <label><input type="radio" name="device_type" value="Other"><span>Other</span></label>
+          </div></div>
+        <div><label>Make &amp; model <span class="req">*</span></label><input type="text" id="make_model" placeholder="e.g. Lenovo Tab Plus 11.5"></div>
+        <div><label>Asset tag <span class="req">*</span></label><input type="text" id="asset_tag" placeholder="e.g. APL-TAB-004"></div>
+        <div><label>Serial number <span class="req">*</span></label><input type="text" id="serial_number"></div>
+        <div><label>Date issued <span class="req">*</span></label><input type="date" id="issue_date"></div>
+        <div class="full"><label>Accessories issued</label>
+          <div class="chips" id="accessories">
+            <label class="chip"><input type="checkbox" value="Charger & cable"><span>Charger &amp; cable</span></label>
+            <label class="chip"><input type="checkbox" value="Protective case"><span>Protective case</span></label>
+            <label class="chip"><input type="checkbox" value="Carry bag"><span>Carry bag</span></label>
+            <label class="chip"><input type="checkbox" value="Stylus / pen"><span>Stylus / pen</span></label>
+            <label class="chip"><input type="checkbox" value="Mouse"><span>Mouse</span></label>
+            <label class="chip"><input type="checkbox" value="Keyboard"><span>Keyboard</span></label>
+            <label class="chip"><input type="checkbox" value="Docking station"><span>Docking station</span></label>
+            <label class="chip"><input type="checkbox" value="Headset"><span>Headset</span></label>
+          </div></div>
+        <div class="full"><label>Condition on issue <span class="req">*</span></label>
+          <div class="seg">
+            <label><input type="radio" name="condition" value="New"><span>New</span></label>
+            <label><input type="radio" name="condition" value="Good"><span>Good</span></label>
+            <label><input type="radio" name="condition" value="Fair"><span>Fair</span></label>
+          </div></div>
+        <div class="full"><label>Existing marks or damage <span class="hint">(record anything already there)</span></label><textarea id="condition_notes"></textarea></div>
+        <div class="full"><label>Storage when off shift <span class="req">*</span></label>
+          <div class="seg">
+            <label><input type="radio" name="storage" value="Take home" checked><span>Take home (interim)</span></label>
+            <label><input type="radio" name="storage" value="On-site storage"><span>On-site secure storage</span></label>
+          </div></div>
+        <div class="full"><label>Issued by <span class="req">*</span></label><input type="text" id="issued_by" value="Philip O'Crowley"></div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step hidden" data-step="3">
+      <h2>Conditions of use</h2>
+      <p class="sub">Read each one and tick to confirm. All are required.</p>
+      <div class="allbar"><span id="termCount">0 of 0 confirmed</span></div>
+      <div id="terms"></div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step hidden" data-step="4">
+      <h2>Sign</h2>
+      <p class="sub">Check the summary, then both of you sign below.</p>
+      <dl class="summary" id="summary"></dl>
+      <div class="grid">
+        <div class="full">
+          <label>Staff member signature <span class="req">*</span></label>
+          <div class="sigbox"><canvas id="sigStaff"></canvas><div class="ph">Sign here</div></div>
+          <div class="sigrow"><span class="muted" id="sigStaffName"></span><button class="linkbtn" data-clear="sigStaff">Clear</button></div>
+        </div>
+        <div class="full">
+          <label>Issued by (IT) signature <span class="req">*</span></label>
+          <div class="sigbox"><canvas id="sigIssuer"></canvas><div class="ph">Sign here</div></div>
+          <div class="sigrow"><span class="muted" id="sigIssuerName"></span><button class="linkbtn" data-clear="sigIssuer">Clear</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="err" id="wizErr"></div>
+    <div class="nav">
+      <button class="btn ghost" id="backBtn">Back</button>
+      <button class="btn" id="nextBtn">Next</button>
+    </div>
+  </div>
+
+  <div class="card done hidden" id="doneCard">
+    <div class="tick">✓</div>
+    <h2>Sign-off recorded</h2>
+    <p class="sub">Reference <span class="ref" id="doneRef"></span></p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn" id="donePdf">Download PDF copy</button>
+      <button class="btn ghost" id="doneNew">Start another</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REGISTER ============ -->
+<section id="view-register" class="hidden">
+  <div class="card" id="authCard">
+    <h2>Device register</h2>
+    <p class="sub">For IT and management. Sign in with a one-time code sent to your email.</p>
+    <div id="authStep1">
+      <label>Work email</label>
+      <input type="email" id="authEmail" placeholder="name@avoncourt.com">
+      <div class="nav" style="justify-content:flex-start"><button class="btn" id="sendCode">Send code</button></div>
+    </div>
+    <div id="authStep2" class="hidden">
+      <label>Enter the code from your email</label>
+      <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" placeholder="Code">
+      <div class="nav" style="justify-content:flex-start"><button class="btn" id="verifyCode">Sign in</button><button class="btn ghost" id="authBack">Use a different email</button></div>
+    </div>
+    <div class="err" id="authErr"></div>
+  </div>
+
+  <div id="regBody" class="hidden">
+    <div class="tiles">
+      <div class="tile"><div class="n" id="tOn">0</div><div class="l">Devices on issue</div></div>
+      <div class="tile"><div class="n" id="tLap">0</div><div class="l">Laptops out</div></div>
+      <div class="tile"><div class="n" id="tTab">0</div><div class="l">Tablets out</div></div>
+      <div class="tile"><div class="n" id="tHome">0</div><div class="l">Going home nightly</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+        <h2 style="margin:0">All sign-offs</h2>
+        <div class="actions"><button class="btn ghost sm" id="csvBtn">Export CSV</button><button class="btn ghost sm" id="signOut">Sign out</button></div>
+      </div>
+      <div class="filters">
+        <input type="text" id="fSearch" placeholder="Search name, asset tag, serial…">
+        <select id="fType"><option value="">All types</option><option>Laptop</option><option>Tablet</option><option>Other</option></select>
+        <select id="fStatus"><option value="">All statuses</option><option>On issue</option><option>Returned</option><option>Lost / stolen</option></select>
+      </div>
+      <div class="tblwrap"><table class="tbl"><thead><tr><th>Staff</th><th>Device</th><th>Issued</th><th>Status</th><th></th></tr></thead><tbody id="regRows"></tbody></table></div>
+      <p class="muted" id="regEmpty" style="text-align:center;padding:20px 0" hidden>No records match.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<dialog id="retDlg"><div class="dlg">
+  <h2>Close out device</h2>
+  <p class="sub" id="retWho"></p>
+  <div class="grid">
+    <div><label>Outcome</label><select id="retStatus"><option>Returned</option><option>Lost / stolen</option></select></div>
+    <div><label>Date</label><input type="date" id="retDate"></div>
+    <div><label>Condition on return</label><select id="retCond"><option>Good</option><option>Fair — normal wear</option><option>Damaged</option><option>Not returned</option></select></div>
+    <div><label>All accessories returned?</label><select id="retAcc"><option>Yes</option><option>No — see notes</option></select></div>
+    <div><label>Notes</label><textarea id="retNotes" placeholder="Damage, missing items, Garda ref no. etc."></textarea></div>
+    <div><label>Received / recorded by</label><input type="text" id="retBy"></div>
+  </div>
+  <div class="err" id="retErr"></div>
+  <div class="nav"><button class="btn ghost" id="retCancel">Cancel</button><button class="btn" id="retSave">Save</button></div>
+</div></dialog>
+
+<footer>Avoncourt Packaging Ltd · Ballycurreen Industrial Estate, Cork · Lost or stolen device? Contact Philip O'Crowley immediately.</footer>
+
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL  = 'https://attnhvdollarpqfulmhe.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0dG5odmRvbGxhcnBxZnVsbWhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzMzQzMzksImV4cCI6MjEwMDkxMDMzOX0.BbxmvSuD0xtpK61B90WBXnXmOHwOvz8z9wcIa4O4Exs';
+const TERMS_VERSION = 'APL-IT-EQ-01 v1.0 (Sep 2026)';
+const IT_CONTACT    = "Philip O'Crowley (Systems Manager)";
+
+const sb = (window.supabase && SUPABASE_ANON !== 'PASTE_ANON_KEY_HERE')
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
+
+/* ================= TERMS ================= */
+function buildTerms(storage){
+  const t = [
+    {id:'property', h:'Company property', p:'The device and accessories remain the property of Avoncourt Packaging Ltd at all times and are issued to me for work purposes only.'},
+    {id:'responsible', h:'My responsibility', p:'I am personally responsible for the care and security of this device while it is issued to me, and will treat it with reasonable care.'},
+    {id:'noshare', h:'Not to be shared', p:'I will not lend, share or allow anyone else to use this device — including colleagues, family or friends — unless IT has authorised it. I will not share my passwords or PIN.'},
+    {id:'nopersonal', h:'Work use only — no personal use', p:'I will not use the device for personal purposes, including personal email, social media, streaming, gaming, shopping, or storing personal files or photos.'},
+    {id:'nosoftware', h:'No unauthorised software or changes', p:'I will not install apps or software, change security settings, remove management profiles, or connect unapproved USB storage or devices.'},
+    {id:'secure', h:'Keep it secure', p:'I will keep the PIN, password or face unlock enabled, lock the device when I step away, and allow updates to install when prompted.'},
+    {id:'account', h:'My own account and MFA', p:'I will only sign in with my own APL account and will set up multi-factor authentication (MFA) on a method registered to me. I will never share sign-in codes or approve a sign-in request I did not start.'},
+  ];
+  if(storage === 'Take home'){
+    t.push({id:'takehome', interim:true, h:'Taking the device home', p:'Until secure on-site storage is available, I will take the device home at the end of each shift. I will carry it out of sight, never leave it unattended in a vehicle, keep it somewhere secure at home away from others, and bring it back charged for my next shift.'});
+  } else {
+    t.push({id:'onsite', h:'On-site storage', p:'I will return the device to its assigned secure storage at the end of each shift and will not remove it from site unless authorised by IT.'});
+  }
+  t.push(
+    {id:'report', h:'Report loss, theft or damage immediately', p:`I will report any loss, theft, damage or suspected compromise to ${IT_CONTACT} straight away. If stolen, I will also report it to An Garda Síochána and provide the reference number.`},
+    {id:'monitor', h:'Management and monitoring', p:'I understand APL controls the accounts this device is set up with and may manage, monitor, locate, lock or wipe it remotely, and that content on it is not private.'},
+    {id:'return', h:'Return of equipment', p:'I will return the device and all accessories on request, if I change role, or when I leave APL, in the same condition allowing for fair wear and tear.'},
+    {id:'breach', h:'Breach of these conditions', p:'I understand that misuse of the device or breach of these conditions may be dealt with under the APL disciplinary procedure.'}
+  );
+  return t;
+}
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const radio = n => (document.querySelector(`input[name="${n}"]:checked`)||{}).value || '';
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('en-IE',{day:'2-digit',month:'short',year:'numeric'}) : '';
+const today = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); };
+const shortRef = id => 'EQ-' + id.replace(/-/g,'').slice(0,8).toUpperCase();
+const uuid = () => (crypto.randomUUID ? crypto.randomUUID() :
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==='x'?r:(r&3|8)).toString(16)}));
+function showErr(el,msg){el.textContent=msg;el.style.display=msg?'block':'none'}
+
+/* ================= TABS ================= */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));
+  $('view-signoff').classList.toggle('hidden', b.dataset.view!=='signoff');
+  $('view-register').classList.toggle('hidden', b.dataset.view!=='register');
+  if(b.dataset.view==='register') initRegister();
+  else resizeSigs();
+});
+
+/* ================= SIGNATURE PADS ================= */
+const pads = {};
+function makePad(id){
+  const c = $(id), ctx = c.getContext('2d'), ph = c.parentElement.querySelector('.ph');
+  const pad = {c, ctx, empty:true, drawing:false};
+  const pos = e => { const r=c.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
+  c.addEventListener('pointerdown',e=>{pad.drawing=true;c.setPointerCapture(e.pointerId);const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();pad.empty=false;ph.style.display='none'});
+  c.addEventListener('pointermove',e=>{if(!pad.drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke()});
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>c.addEventListener(ev,()=>pad.drawing=false));
+  pad.clear=()=>{ctx.clearRect(0,0,c.width,c.height);pad.empty=true;ph.style.display='flex'};
+  pad.resize=()=>{
+    const r=c.getBoundingClientRect(); if(!r.width) return;
+    const dpr=window.devicePixelRatio||1;
+    c.width=r.width*dpr; c.height=r.height*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1a2a4a';
+    pad.empty=true; ph.style.display='flex';
+  };
+  pad.data=()=>{ // trimmed white-background PNG, kept small for storage
+    const out=document.createElement('canvas'); out.width=600; out.height=Math.round(600*c.height/c.width);
+    const o=out.getContext('2d'); o.fillStyle='#fff'; o.fillRect(0,0,out.width,out.height);
+    o.drawImage(c,0,0,out.width,out.height); return out.toDataURL('image/png');
+  };
+  pads[id]=pad; return pad;
+}
+makePad('sigStaff'); makePad('sigIssuer');
+document.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>pads[b.dataset.clear].clear());
+function resizeSigs(){ Object.values(pads).forEach(p=>p.empty && p.resize()); }
+window.addEventListener('resize',()=>{ Object.values(pads).forEach(p=>{ if(p.empty) p.resize(); }); });
+
+/* ================= WIZARD ================= */
+const LABELS=['Your details','Device issued','Conditions of use','Sign'];
+let step=1, currentTerms=[], lastRecord=null;
+$('issue_date').value=today();
+
+function renderTerms(){
+  const storage=radio('storage');
+  const prev = new Set([...document.querySelectorAll('#terms input:checked')].map(i=>i.value));
+  currentTerms=buildTerms(storage);
+  $('terms').innerHTML=currentTerms.map(t=>`
+    <label class="term${t.interim?' interim':''}${prev.has(t.id)?' checked':''}">
+      <input type="checkbox" value="${t.id}"${prev.has(t.id)?' checked':''}>
+      <div><b>${esc(t.h)}${t.interim?'<span class="tag">Interim</span>':''}</b><p>${esc(t.p)}</p></div>
+    </label>`).join('');
+  $('terms').querySelectorAll('input').forEach(i=>i.onchange=()=>{i.closest('.term').classList.toggle('checked',i.checked);countTerms()});
+  countTerms();
+}
+function countTerms(){
+  const n=document.querySelectorAll('#terms input:checked').length;
+  $('termCount').textContent=`${n} of ${currentTerms.length} confirmed`;
+}
+
+function collect(){
+  return {
+    staff_name:$('staff_name').value.trim(), department:$('department').value, job_title:$('job_title').value.trim(),
+    employee_id:$('employee_id').value.trim(), staff_email:$('staff_email').value.trim().toLowerCase(),
+    device_type:radio('device_type'), make_model:$('make_model').value.trim(), asset_tag:$('asset_tag').value.trim().toUpperCase(),
+    serial_number:$('serial_number').value.trim(), issue_date:$('issue_date').value,
+    accessories:[...document.querySelectorAll('#accessories input:checked')].map(i=>i.value),
+    condition_on_issue:radio('condition'), condition_notes:$('condition_notes').value.trim(),
+    storage_arrangement:radio('storage'), issued_by:$('issued_by').value.trim()
+  };
+}
+
+function validate(s){
+  const d=collect();
+  if(s===1){
+    if(!d.staff_name) return 'Enter your full name.';
+    if(!d.department) return 'Select your department.';
+    if(d.staff_email && !/^\S+@\S+\.\S+$/.test(d.staff_email)) return 'That email address doesn\'t look right.';
+  }
+  if(s===2){
+    if(!d.device_type) return 'Choose the device type.';
+    if(!d.make_model) return 'Enter the make and model.';
+    if(!d.asset_tag) return 'Enter the asset tag.';
+    if(!d.serial_number) return 'Enter the serial number.';
+    if(!d.issue_date) return 'Enter the date issued.';
+    if(!d.condition_on_issue) return 'Record the condition on issue.';
+    if(!d.issued_by) return 'Enter who issued the device.';
+  }
+  if(s===3){
+    const n=document.querySelectorAll('#terms input:checked').length;
+    if(n<currentTerms.length) return `Please confirm all ${currentTerms.length} conditions (${currentTerms.length-n} still to tick).`;
+  }
+  if(s===4){
+    if(pads.sigStaff.empty) return 'Staff member signature is required.';
+    if(pads.sigIssuer.empty) return 'Issuer signature is required.';
+  }
+  return '';
+}
+
+function renderSummary(){
+  const d=collect();
+  const rows=[['Name',d.staff_name],['Department',d.department],['Device',`${d.device_type} · ${d.make_model}`],
+    ['Asset tag',d.asset_tag],['Serial',d.serial_number],['Accessories',d.accessories.join(', ')||'None'],
+    ['Condition',d.condition_on_issue+(d.condition_notes?` — ${d.condition_notes}`:'')],['Off-shift storage',d.storage_arrangement],['Date',fmtDate(d.issue_date)]];
+  $('summary').innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('');
+  $('sigStaffName').textContent=d.staff_name; $('sigIssuerName').textContent=d.issued_by;
+}
+
+function go(n){
+  step=n;
+  document.querySelectorAll('.step').forEach(el=>el.classList.toggle('hidden',+el.dataset.step!==n));
+  document.querySelectorAll('#stepBar div').forEach((b,i)=>b.classList.toggle('on',i<n));
+  $('stepLabel').textContent=`Step ${n} of 4 · ${LABELS[n-1]}`;
+  $('backBtn').style.visibility=n===1?'hidden':'visible';
+  $('nextBtn').textContent=n===4?'Submit sign-off':'Next';
+  if(n===3) renderTerms();
+  if(n===4){ renderSummary(); requestAnimationFrame(resizeSigs); }
+  showErr($('wizErr'),'');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('input[name="storage"]').forEach(r=>r.onchange=()=>{ if(step===3) renderTerms(); });
+$('backBtn').onclick=()=>go(step-1);
+$('nextBtn').onclick=async()=>{
+  const e=validate(step); if(e) return showErr($('wizErr'),e);
+  if(step<4) return go(step+1);
+  await submit();
+};
+
+async function submit(){
+  const btn=$('nextBtn'); btn.disabled=true; btn.textContent='Saving…';
+  const d=collect();
+  const rec={ id:uuid(), ...d, terms_version:TERMS_VERSION,
+    terms_accepted: currentTerms.map(t=>({id:t.id,heading:t.h,text:t.p})),
+    staff_signature:pads.sigStaff.data(), issuer_signature:pads.sigIssuer.data(),
+    signed_at:new Date().toISOString(), user_agent:navigator.userAgent.slice(0,250) };
+  try{
+    if(!sb) throw new Error('Not connected to the database yet (anon key missing). Contact IT.');
+    const {error}=await sb.from('device_signoffs').insert(rec);
+    if(error) throw error;
+    lastRecord={...rec, created_at:rec.signed_at, status:'On issue'};
+    $('wizard').classList.add('hidden'); $('doneCard').classList.remove('hidden');
+    $('doneRef').textContent=shortRef(rec.id);
+  }catch(err){
+    const msg = err.code==='23505'
+      ? `Asset ${d.asset_tag} is already signed out to someone. Close out the existing record in the Device register first.`
+      : 'Could not save: '+(err.message||err);
+    showErr($('wizErr'),msg);
+  }finally{ btn.disabled=false; btn.textContent='Submit sign-off'; }
+}
+$('donePdf').onclick=()=>makePdf(lastRecord);
+$('doneNew').onclick=()=>location.reload();
+go(1);
+
+/* ================= PDF ================= */
+function makePdf(r){
+  const { jsPDF } = window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210, M=16; let y=0;
+  const moss=[77,107,60];
+  doc.setFillColor(58,82,48); doc.rect(0,0,W,24,'F');
+  doc.setTextColor(255); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.text('AVONCOURT PACKAGING LTD  ·  IT', M, 9);
+  doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.text('IT Equipment Issue & Responsibility Agreement', M, 17);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text('Ref '+shortRef(r.id), W-M, 17, {align:'right'});
+  doc.setTextColor(30); y=32;
+
+  const section=t=>{ if(y>265){doc.addPage();y=18}
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(...moss); doc.text(t.toUpperCase(),M,y);
+    doc.setDrawColor(...moss); doc.line(M,y+1.5,W-M,y+1.5); doc.setTextColor(30); y+=7; };
+  const kv=(pairs)=>{ doc.setFontSize(9.5);
+    for(let i=0;i<pairs.length;i+=2){
+      [pairs[i],pairs[i+1]].forEach((p,j)=>{ if(!p) return; const x=M+j*89;
+        doc.setFont('helvetica','normal'); doc.setTextColor(110); doc.text(p[0],x,y);
+        doc.setTextColor(30); doc.setFont('helvetica','bold');
+        doc.text(doc.splitTextToSize(String(p[1]||'—'),58),x+28,y); });
+      y+=6; }
+    y+=2; };
+
+  section('Staff member');
+  kv([['Name',r.staff_name],['Department',r.department],['Job title',r.job_title],['Employee ID',r.employee_id],['Email',r.staff_email]]);
+  section('Device');
+  kv([['Type',r.device_type],['Make / model',r.make_model],['Asset tag',r.asset_tag],['Serial no.',r.serial_number],
+      ['Date issued',fmtDate(r.issue_date)],['Condition',r.condition_on_issue],['Off-shift',r.storage_arrangement],['Issued by',r.issued_by]]);
+  doc.setFontSize(9.5); doc.setFont('helvetica','normal'); doc.setTextColor(110); doc.text('Accessories',M,y);
+  doc.setTextColor(30); doc.setFont('helvetica','bold'); const acc=doc.splitTextToSize((r.accessories||[]).join(', ')||'None',150); doc.text(acc,M+28,y); y+=acc.length*4.5+2;
+  if(r.condition_notes){ doc.setFont('helvetica','normal'); doc.setTextColor(110); doc.text('Existing marks',M,y);
+    doc.setTextColor(30); const cn=doc.splitTextToSize(r.condition_notes,150); doc.text(cn,M+28,y); y+=cn.length*4.5+2; }
+  y+=2;
+
+  section('Conditions of use — each confirmed by the staff member');
+  (r.terms_accepted||[]).forEach((t,i)=>{
+    const body=doc.splitTextToSize(t.text,W-2*M-10); const h=5+body.length*4;
+    if(y+h>280){doc.addPage();y=18}
+    doc.setFillColor(...moss); doc.roundedRect(M,y-3.2,4,4,0.8,0.8,'F');
+    doc.setFont('helvetica','bold'); doc.setDrawColor(255); doc.setLineWidth(0.6); doc.line(M+0.9,y-1.3,M+1.7,y-0.4); doc.line(M+1.7,y-0.4,M+3.2,y-2.4); doc.setLineWidth(0.2);
+    doc.setTextColor(30); doc.setFontSize(9.5); doc.text(`${i+1}. ${t.heading}`,M+7,y);
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.8); doc.setTextColor(70); doc.text(body,M+7,y+4.5);
+    y+=h+2.5;
+  });
+
+  if(y>220){doc.addPage();y=18}
+  y+=2; section('Signatures');
+  const sig=(label,name,img,x)=>{
+    doc.setDrawColor(200); doc.rect(x,y,84,30);
+    try{ doc.addImage(img,'PNG',x+1,y+1,82,28); }catch(e){}
+    doc.setFontSize(8.5); doc.setTextColor(110); doc.setFont('helvetica','normal'); doc.text(label,x,y+35);
+    doc.setTextColor(30); doc.setFont('helvetica','bold'); doc.text(name||'',x,y+39.5);
+  };
+  sig('Staff member',r.staff_name,r.staff_signature,M);
+  sig('Issued by (IT)',r.issued_by,r.issuer_signature,M+94);
+  y+=46;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(90);
+  doc.text(`Signed ${new Date(r.signed_at||r.created_at).toLocaleString('en-IE')}`,M,y);
+
+  if(r.status && r.status!=='On issue'){
+    y+=10; if(y>255){doc.addPage();y=18}
+    section('Close-out');
+    kv([['Outcome',r.status],['Date',fmtDate(r.returned_date)],['Condition',r.return_condition],['Accessories',r.accessories_returned],['Recorded by',r.received_by]]);
+    if(r.return_notes){ const rn=doc.splitTextToSize(r.return_notes,W-2*M); doc.setFont('helvetica','normal'); doc.text(rn,M,y); }
+  }
+
+  const pages=doc.getNumberOfPages();
+  for(let p=1;p<=pages;p++){ doc.setPage(p); doc.setFontSize(7.5); doc.setTextColor(140); doc.setFont('helvetica','normal');
+    doc.text(`${TERMS_VERSION}  ·  ${shortRef(r.id)}  ·  Page ${p} of ${pages}`,M,290);
+    doc.text('Avoncourt Packaging Ltd, Ballycurreen Industrial Estate, Cork',W-M,290,{align:'right'}); }
+  doc.save(`IT-Equipment-${(r.asset_tag||'device').replace(/[^\w-]/g,'')}-${(r.staff_name||'').replace(/\s+/g,'_')}.pdf`);
+}
+
+/* ================= REGISTER ================= */
+let regRows=[], regReady=false, retTarget=null;
+async function initRegister(){
+  if(!sb){ showErr($('authErr'),'Not connected to the database yet (anon key missing).'); return; }
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) return enterRegister(session);
+}
+$('sendCode').onclick=async()=>{
+  const email=$('authEmail').value.trim().toLowerCase(); showErr($('authErr'),'');
+  if(!/^\S+@\S+\.\S+$/.test(email)) return showErr($('authErr'),'Enter a valid email.');
+  if(!sb) return showErr($('authErr'),'Not connected to the database yet.');
+  $('sendCode').disabled=true;
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
+  $('sendCode').disabled=false;
+  if(error) return showErr($('authErr'),error.message);
+  $('authStep1').classList.add('hidden'); $('authStep2').classList.remove('hidden'); $('authCode').focus();
+};
+$('authBack').onclick=()=>{ $('authStep2').classList.add('hidden'); $('authStep1').classList.remove('hidden'); };
+$('verifyCode').onclick=async()=>{
+  const email=$('authEmail').value.trim().toLowerCase(), token=$('authCode').value.replace(/\s/g,'');
+  showErr($('authErr'),'');
+  const {data,error}=await sb.auth.verifyOtp({email,token,type:'email'});
+  if(error) return showErr($('authErr'),error.message);
+  enterRegister(data.session);
+};
+$('signOut').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+
+async function enterRegister(session){
+  const {data:ok,error}=await sb.rpc('is_device_signoff_viewer');
+  if(error || !ok){ showErr($('authErr'),`${session.user.email} isn't on the device register access list. Ask IT to add you.`); return; }
+  $('authCard').classList.add('hidden'); $('regBody').classList.remove('hidden');
+  $('retBy').value=session.user.email;
+  await loadRegister();
+}
+async function loadRegister(){
+  const {data,error}=await sb.from('device_signoffs').select('*').order('issue_date',{ascending:false}).order('created_at',{ascending:false});
+  if(error){ alertInline(error.message); return; }
+  regRows=data||[]; renderRegister();
+}
+function alertInline(m){ $('regRows').innerHTML=`<tr><td colspan="5" style="color:var(--red)">${esc(m)}</td></tr>`; }
+['fSearch','fType','fStatus'].forEach(id=>$(id).addEventListener('input',renderRegister));
+function renderRegister(){
+  const on=regRows.filter(r=>r.status==='On issue');
+  $('tOn').textContent=on.length;
+  $('tLap').textContent=on.filter(r=>r.device_type==='Laptop').length;
+  $('tTab').textContent=on.filter(r=>r.device_type==='Tablet').length;
+  $('tHome').textContent=on.filter(r=>r.storage_arrangement==='Take home').length;
+  const q=$('fSearch').value.trim().toLowerCase(), ft=$('fType').value, fs=$('fStatus').value;
+  const rows=regRows.filter(r=>(!ft||r.device_type===ft)&&(!fs||r.status===fs)&&
+    (!q||[r.staff_name,r.asset_tag,r.serial_number,r.make_model,r.department].join(' ').toLowerCase().includes(q)));
+  $('regEmpty').hidden=rows.length>0;
+  $('regRows').innerHTML=rows.map(r=>{
+    const pill=r.status==='On issue'?'on':r.status==='Returned'?'ret':'lost';
+    return `<tr>
+      <td><b>${esc(r.staff_name)}</b><div class="muted">${esc(r.department)}</div></td>
+      <td>${esc(r.device_type)} · ${esc(r.make_model)}<div class="muted">${esc(r.asset_tag)} · S/N ${esc(r.serial_number)}</div></td>
+      <td>${fmtDate(r.issue_date)}<div class="muted">${r.storage_arrangement==='Take home'?'Takes home':'On-site'}</div></td>
+      <td><span class="pill ${pill}">${esc(r.status)}</span>${r.returned_date?`<div class="muted">${fmtDate(r.returned_date)}</div>`:''}</td>
+      <td><div class="actions"><button class="btn ghost sm" data-pdf="${r.id}">PDF</button>${r.status==='On issue'?`<button class="btn sm" data-ret="${r.id}">Close out</button>`:''}</div></td>
+    </tr>`}).join('');
+  $('regRows').querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>makePdf(regRows.find(r=>r.id===b.dataset.pdf)));
+  $('regRows').querySelectorAll('[data-ret]').forEach(b=>b.onclick=()=>openReturn(regRows.find(r=>r.id===b.dataset.ret)));
+}
+function openReturn(r){
+  retTarget=r; $('retWho').textContent=`${r.staff_name} — ${r.device_type} ${r.asset_tag}`;
+  $('retDate').value=today(); $('retNotes').value=''; $('retStatus').value='Returned'; $('retCond').value='Good'; $('retAcc').value='Yes';
+  showErr($('retErr'),''); $('retDlg').showModal();
+}
+$('retStatus').onchange=()=>{ if($('retStatus').value==='Lost / stolen'){ $('retCond').value='Not returned'; $('retAcc').value='No — see notes'; } };
+$('retCancel').onclick=()=>$('retDlg').close();
+$('retSave').onclick=async()=>{
+  const upd={status:$('retStatus').value, returned_date:$('retDate').value, return_condition:$('retCond').value,
+    accessories_returned:$('retAcc').value, return_notes:$('retNotes').value.trim(), received_by:$('retBy').value.trim()};
+  if(!upd.returned_date) return showErr($('retErr'),'Enter a date.');
+  const {error}=await sb.from('device_signoffs').update(upd).eq('id',retTarget.id);
+  if(error) return showErr($('retErr'),error.message);
+  $('retDlg').close(); await loadRegister();
+};
+$('csvBtn').onclick=()=>{
+  const cols=['id','staff_name','department','job_title','employee_id','staff_email','device_type','make_model','asset_tag','serial_number','accessories','condition_on_issue','condition_notes','storage_arrangement','issued_by','issue_date','signed_at','terms_version','status','returned_date','return_condition','accessories_returned','return_notes','received_by'];
+  const cell=v=>{v=Array.isArray(v)?v.join('; '):(v??'');return /[",\n]/.test(v)?`"${String(v).replace(/"/g,'""')}"`:v};
+  const csv=[cols.join(','),...regRows.map(r=>cols.map(c=>cell(r[c])).join(','))].join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`APL-device-register-${today()}.csv`; a.click();
+};
+</script>
+</body>
+</html>
