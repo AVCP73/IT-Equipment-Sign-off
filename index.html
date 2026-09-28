@@ -237,16 +237,17 @@
   <div class="card" id="authCard">
     <h2>Device register</h2>
     <p class="sub">For IT and management. Sign in with a one-time code sent to your email.</p>
-    <div id="authStep1">
-      <label>Work email</label>
-      <input type="email" id="authEmail" placeholder="name@avoncourt.com">
-      <div class="nav" style="justify-content:flex-start"><button class="btn" id="sendCode">Send code</button></div>
-    </div>
-    <div id="authStep2" class="hidden">
-      <label>Enter the code from your email</label>
-      <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" placeholder="Code">
-      <div class="nav" style="justify-content:flex-start"><button class="btn" id="verifyCode">Sign in</button><button class="btn ghost" id="authBack">Use a different email</button></div>
-    </div>
+    <form id="authStep1" novalidate>
+      <label for="authEmail">Work email</label>
+      <input type="email" id="authEmail" name="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="name@avoncourt.com">
+      <div class="nav" style="justify-content:flex-start;align-items:center;flex-wrap:wrap"><button type="submit" class="btn" id="sendCode">Send code</button><button type="button" class="linkbtn" id="haveCode">I already have a code</button></div>
+    </form>
+    <form id="authStep2" class="hidden" novalidate>
+      <p class="sub" id="codeSentTo" style="margin-bottom:12px"></p>
+      <label for="authCode">Enter the code from your email</label>
+      <input type="text" id="authCode" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Code">
+      <div class="nav" style="justify-content:flex-start;flex-wrap:wrap"><button type="submit" class="btn" id="verifyCode">Sign in</button><button type="button" class="btn ghost" id="authBack">Use a different email</button></div>
+    </form>
     <div class="err" id="authErr"></div>
   </div>
 
@@ -582,24 +583,67 @@ async function initRegister(){
   const {data:{session}}=await sb.auth.getSession();
   if(session) return enterRegister(session);
 }
-$('sendCode').onclick=async()=>{
-  const email=$('authEmail').value.trim().toLowerCase(); showErr($('authErr'),'');
-  if(!/^\S+@\S+\.\S+$/.test(email)) return showErr($('authErr'),'Enter a valid email.');
+/* Pending sign-in is remembered so that switching to the mail app on a phone
+   (which often reloads this page) brings you straight back to the code box. */
+const PENDING_KEY='eqRegisterPending';
+function getPending(){ try{ const p=JSON.parse(localStorage.getItem(PENDING_KEY)||'null'); return p && Date.now()-p.t<60*60*1000 ? p : null; }catch(e){ return null; } }
+function setPending(email){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify({email,t:Date.now()})); }catch(e){} }
+function clearPending(){ try{ localStorage.removeItem(PENDING_KEY); }catch(e){} }
+function cleanEmail(){ return $('authEmail').value.replace(/\s+/g,'').toLowerCase(); }
+function showCodeStep(email){
+  $('authEmail').value=email;
+  $('codeSentTo').textContent=`Code sent to ${email}. Check your inbox and junk folder — it can take a minute.`;
+  $('authStep1').classList.add('hidden'); $('authStep2').classList.remove('hidden');
+}
+function friendlyAuthError(err){
+  const m=(err&&err.message)||String(err||'');
+  if(/security purposes|rate limit|too many/i.test(m)) return 'A code was sent very recently. Wait a minute, then try again — or tap "I already have a code".';
+  if(/expired|invalid|token/i.test(m)) return 'That code didn\'t work. Check it matches the latest email, or go back and send a new one.';
+  if(/fetch|network|load failed/i.test(m)) return 'No connection to the server. Check the phone has signal or Wi-Fi and try again.';
+  return m;
+}
+
+$('authStep1').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const email=cleanEmail(); showErr($('authErr'),'');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showErr($('authErr'),'Enter a valid email.');
   if(!sb) return showErr($('authErr'),'Not connected to the database yet.');
-  $('sendCode').disabled=true;
-  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
-  $('sendCode').disabled=false;
-  if(error) return showErr($('authErr'),error.message);
-  $('authStep1').classList.add('hidden'); $('authStep2').classList.remove('hidden'); $('authCode').focus();
+  const btn=$('sendCode'); btn.disabled=true; btn.textContent='Sending…';
+  try{
+    const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});
+    if(error) throw error;
+    setPending(email); showCodeStep(email);
+    $('authEmail').blur();
+  }catch(err){ showErr($('authErr'),friendlyAuthError(err)); }
+  finally{ btn.disabled=false; btn.textContent='Send code'; }
+});
+$('haveCode').onclick=()=>{
+  const email=cleanEmail(); showErr($('authErr'),'');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return showErr($('authErr'),'Enter your email first, then tap this.');
+  setPending(email); showCodeStep(email); $('codeSentTo').textContent=`Signing in as ${email}.`;
 };
-$('authBack').onclick=()=>{ $('authStep2').classList.add('hidden'); $('authStep1').classList.remove('hidden'); };
-$('verifyCode').onclick=async()=>{
-  const email=$('authEmail').value.trim().toLowerCase(), token=$('authCode').value.replace(/\s/g,'');
+$('authBack').onclick=()=>{ clearPending(); showErr($('authErr'),''); $('authCode').value=''; $('authStep2').classList.add('hidden'); $('authStep1').classList.remove('hidden'); };
+$('authStep2').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const email=cleanEmail(), token=$('authCode').value.replace(/\D/g,'');
   showErr($('authErr'),'');
-  const {data,error}=await sb.auth.verifyOtp({email,token,type:'email'});
-  if(error) return showErr($('authErr'),error.message);
-  enterRegister(data.session);
-};
+  if(!token) return showErr($('authErr'),'Enter the code from the email.');
+  const btn=$('verifyCode'); btn.disabled=true; btn.textContent='Checking…';
+  try{
+    const {data,error}=await sb.auth.verifyOtp({email,token,type:'email'});
+    if(error) throw error;
+    clearPending(); $('authCode').blur();
+    await enterRegister(data.session);
+  }catch(err){ showErr($('authErr'),friendlyAuthError(err)); }
+  finally{ btn.disabled=false; btn.textContent='Sign in'; }
+});
+
+// Came back from the mail app mid sign-in? Reopen the register at the code step.
+(function(){
+  const p=getPending(); if(!p) return;
+  showCodeStep(p.email);
+  const regTab=document.querySelector('.tab[data-view="register"]'); if(regTab) regTab.click();
+})();
 $('signOut').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
 
 async function enterRegister(session){
